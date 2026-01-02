@@ -7,20 +7,15 @@
 
   <style>
     body {
-      margin: 0;
-      padding: 24px;
       background: #0e1117;
       color: #e6e6e6;
       font-family: Arial, Helvetica, sans-serif;
+      padding: 24px;
     }
 
     .container {
       max-width: 800px;
       margin: auto;
-    }
-
-    h1 {
-      margin-bottom: 16px;
     }
 
     .card {
@@ -30,29 +25,26 @@
       box-shadow: 0 10px 30px rgba(0,0,0,.4);
     }
 
+    h1 { margin-bottom: 16px; }
+
     label {
       display: block;
       margin-top: 14px;
       margin-bottom: 6px;
       font-weight: bold;
-      font-size: 14px;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 10px 12px;
+      padding: 10px;
       border-radius: 8px;
       border: 1px solid #30363d;
       background: #0d1117;
       color: #e6e6e6;
-      font-size: 14px;
       box-sizing: border-box;
     }
 
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
+    textarea { min-height: 90px; }
 
     .grid {
       display: grid;
@@ -61,23 +53,21 @@
     }
 
     @media (max-width: 650px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+      .grid { grid-template-columns: 1fr; }
     }
 
     .actions {
       display: flex;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 18px;
     }
 
     button {
       padding: 10px 14px;
       border-radius: 8px;
       border: none;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
     }
 
     .primary {
@@ -100,12 +90,6 @@
       font-size: 13px;
       white-space: pre-wrap;
     }
-
-    .note {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #9da5b4;
-    }
   </style>
 </head>
 
@@ -121,7 +105,6 @@
             <label>Date</label>
             <input type="date" name="date" required>
           </div>
-
           <div>
             <label>DFI (Declared Firearms Incident)</label>
             <select name="dfi" required>
@@ -137,7 +120,7 @@
         <textarea name="officers" required></textarea>
 
         <label>DFI as R Grade</label>
-        <input name="rgrade" placeholder="R1 / R2 / etc">
+        <input name="rgrade">
 
         <label>Tactics used</label>
         <textarea name="tactics"></textarea>
@@ -163,95 +146,63 @@
         <input name="firearm" required>
 
         <div class="actions">
-          <button type="submit" class="primary">Submit to Discord</button>
-          <button type="button" class="secondary" id="previewBtn">Preview</button>
-          <button type="reset" class="secondary">Clear</button>
+          <button class="primary" type="submit">Submit to Discord</button>
+          <button class="secondary" type="reset">Clear</button>
         </div>
 
         <div id="status" class="status">Status: Ready</div>
-
-        <div class="note">
-          ⚠️ Webhook is stored client-side. Regenerate it if this file is shared.
-        </div>
-
       </form>
     </div>
   </div>
 
   <script>
-    /*********************************************************
+    /*************************************************
      * DISCORD WEBHOOK (CHANGE HERE IF NEEDED)
-     *********************************************************/
+     *************************************************/
     const DISCORD_WEBHOOK_URL =
       "https://discord.com/api/webhooks/1456747189765410840/hcaWfGVQ0hdnx40LYyzc2C-EYGELw5PL8dygWyCjau3pJvCcAzrInIqnZQCswgSQRi9r";
 
     const form = document.getElementById("logForm");
     const statusBox = document.getElementById("status");
-    const previewBtn = document.getElementById("previewBtn");
-
-    function collectData() {
-      const f = new FormData(form);
-      return {
-        date: f.get("date"),
-        officers: f.get("officers"),
-        dfi: f.get("dfi"),
-        rgrade: f.get("rgrade"),
-        tactics: f.get("tactics"),
-        ofc: f.get("ofc"),
-        tfc: f.get("tfc"),
-        sfc: f.get("sfc"),
-        whenwhy: f.get("whenwhy"),
-        firearm: f.get("firearm")
-      };
-    }
-
-    function formatMessage(d) {
-      return [
-        "**UKCR Discharge Logging System**",
-        "",
-        `**Date:** ${d.date}`,
-        `**Officers on scene:**\n${d.officers}`,
-        `**DFI (Declared firearms incident):** ${d.dfi}`,
-        `**DFI as R Grade:** ${d.rgrade || "-"}`,
-        `**Tactics used:**\n${d.tactics || "-"}`,
-        `**On scene OFC:** ${d.ofc || "-"}`,
-        `**On Scene TFC:** ${d.tfc || "-"}`,
-        `**On Scene SFC:** ${d.sfc || "-"}`,
-        `**When and why?:**\n${d.whenwhy}`,
-        `**What firearm was discharged?:** ${d.firearm}`
-      ].join("\n");
-    }
-
-    previewBtn.onclick = () => {
-      const msg = formatMessage(collectData());
-      statusBox.textContent = "PREVIEW:\n\n" + msg;
-    };
 
     form.onsubmit = async (e) => {
       e.preventDefault();
 
-      const message = formatMessage(collectData());
+      const f = new FormData(form);
 
-      if (message.length > 1900) {
-        statusBox.textContent = "Error: Message too long for Discord.";
-        return;
-      }
+      const embed = {
+        title: "UKCR Discharge Logging System",
+        color: 0x5865F2,
+        timestamp: new Date().toISOString(),
+        fields: [
+          { name: "Date", value: f.get("date") || "-", inline: true },
+          { name: "DFI Declared", value: f.get("dfi") || "-", inline: true },
+          { name: "Officers on scene", value: f.get("officers") || "-" },
+          { name: "DFI as R Grade", value: f.get("rgrade") || "-" },
+          { name: "Tactics used", value: f.get("tactics") || "-" },
+          { name: "On scene OFC", value: f.get("ofc") || "-", inline: true },
+          { name: "On Scene TFC", value: f.get("tfc") || "-", inline: true },
+          { name: "On Scene SFC", value: f.get("sfc") || "-" },
+          { name: "When and why?", value: f.get("whenwhy") || "-" },
+          { name: "Firearm discharged", value: f.get("firearm") || "-" }
+        ]
+      };
 
-      statusBox.textContent = "Sending to Discord...";
+      statusBox.textContent = "Sending embed to Discord…";
 
       try {
         const res = await fetch(DISCORD_WEBHOOK_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: message })
+          body: JSON.stringify({ embeds: [embed] })
         });
 
-        if (!res.ok) throw new Error("Discord error");
+        if (!res.ok) throw new Error();
 
-        statusBox.textContent = "✅ Successfully sent to Discord";
+        statusBox.textContent = "✅ Embed sent successfully";
         form.reset();
-      } catch (err) {
-        statusBox.textContent = "❌ Failed to send message";
+      } catch {
+        statusBox.textContent = "❌ Failed to send embed";
       }
     };
   </script>
