@@ -144,7 +144,7 @@
 </div>
 
 <script>
-const WEBHOOK = "YOUR_WEBHOOK_URL";
+const WEBHOOK = "https://discord.com/api/webhooks/1456747189765410840/hcaWfGVQ0hdnx40LYyzc2C-EYGELw5PL8dygWyCjau3pJvCcAzrInIqnZQCswgSQRi9r";
 const form = document.getElementById("logForm");
 const statusBox = document.getElementById("status");
 
