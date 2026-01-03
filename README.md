@@ -96,8 +96,8 @@
     <form id="logForm">
       <div class="grid">
         <div>
-          <label>Date</label>
-          <input type="date" name="date" required>
+          <label>Date & Time of Discharge</label>
+<input type="datetime-local" name="datetime" required>
         </div>
         <div>
           <label>DFI Declared</label>
