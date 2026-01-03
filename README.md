@@ -25,9 +25,7 @@
       box-shadow: 0 10px 30px rgba(0,0,0,.45);
     }
 
-    h1 {
-      margin-bottom: 16px;
-    }
+    h1 { margin-bottom: 16px; }
 
     label {
       display: block;
@@ -44,13 +42,9 @@
       border: 1px solid #30363d;
       background: #0d1117;
       color: #e6e6e6;
-      box-sizing: border-box;
     }
 
-    textarea {
-      min-height: 90px;
-      resize: vertical;
-    }
+    textarea { min-height: 90px; }
 
     .grid {
       display: grid;
@@ -76,11 +70,7 @@
       cursor: pointer;
     }
 
-    .primary {
-      background: #5865F2;
-      color: white;
-    }
-
+    .primary { background: #5865F2; color: white; }
     .secondary {
       background: #21262d;
       color: #e6e6e6;
@@ -94,169 +84,122 @@
       border-radius: 8px;
       border: 1px solid #30363d;
       font-size: 13px;
-      white-space: pre-wrap;
     }
   </style>
 </head>
 
 <body>
-  <div class="container">
-    <h1>UKCR Discharge Logging System</h1>
+<div class="container">
+  <h1>UKCR Discharge Logging System</h1>
 
-    <div class="card">
-      <form id="logForm">
-        <div class="grid">
-          <div>
-            <label>Date</label>
-            <input type="date" name="date" required />
-          </div>
-          <div>
-            <label>DFI (Declared Firearms Incident)</label>
-            <select name="dfi" required>
-              <option value="" disabled selected>Select</option>
-              <option>Yes</option>
-              <option>No</option>
-              <option>Unknown</option>
-            </select>
-          </div>
+  <div class="card">
+    <form id="logForm">
+      <div class="grid">
+        <div>
+          <label>Date</label>
+          <input type="date" name="date" required>
         </div>
-
-        <label>Officers on scene</label>
-        <textarea name="officers" required></textarea>
-
-        <label>DFI as R Grade</label>
-        <input name="rgrade" />
-
-        <label>Tactics used</label>
-        <textarea name="tactics"></textarea>
-
-        <div class="grid">
-          <div>
-            <label>On scene OFC</label>
-            <input name="ofc" />
-          </div>
-          <div>
-            <label>On Scene TFC</label>
-            <input name="tfc" />
-          </div>
+        <div>
+          <label>DFI Declared</label>
+          <select name="dfi" required>
+            <option disabled selected>Select</option>
+            <option>Yes</option>
+            <option>No</option>
+            <option>Unknown</option>
+          </select>
         </div>
+      </div>
 
-        <label>On Scene SFC</label>
-        <input name="sfc" />
+      <label>Officers on scene</label>
+      <textarea name="officers" required></textarea>
 
-        <label>When and why?</label>
-        <textarea name="whenwhy" required></textarea>
+      <label>DFI R Grade</label>
+      <input name="rgrade">
 
-        <label>What firearm was discharged?</label>
-        <input name="firearm" required />
+      <label>Tactics used</label>
+      <textarea name="tactics"></textarea>
 
-        <div class="actions">
-          <button class="primary" type="submit">Submit Report</button>
-          <button class="secondary" type="reset">Clear</button>
-        </div>
+      <div class="grid">
+        <input name="ofc" placeholder="OFC">
+        <input name="tfc" placeholder="TFC">
+      </div>
 
-        <div id="status" class="status">Status: Ready</div>
-      </form>
-    </div>
+      <label>SFC</label>
+      <input name="sfc">
+
+      <label>When and why?</label>
+      <textarea name="whenwhy" required></textarea>
+
+      <label>Firearm discharged</label>
+      <input name="firearm" required>
+
+      <div class="actions">
+        <button class="primary">Submit</button>
+        <button class="secondary" type="reset">Clear</button>
+      </div>
+
+      <div id="status" class="status">Status: Ready</div>
+    </form>
   </div>
+</div>
 
-  <script>
-    /*************************************************
-     * DISCORD WEBHOOK (CHANGE HERE IF NEEDED)
-     *************************************************/
-    const DISCORD_WEBHOOK_URL =
-      "https://discord.com/api/webhooks/1456747189765410840/hcaWfGVQ0hdnx40LYyzc2C-EYGELw5PL8dygWyCjau3pJvCcAzrInIqnZQCswgSQRi9r";
+<script>
+const WEBHOOK = "YOUR_WEBHOOK_URL";
+const form = document.getElementById("logForm");
+const statusBox = document.getElementById("status");
 
-    const form = document.getElementById("logForm");
-    const statusBox = document.getElementById("status");
+form.onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(form);
 
-    // Basic escape so user text can't mess with formatting too badly
-    // (Discord doesn't render HTML, but this helps keep it neat.)
-    const esc = (s) =>
-      String(s ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+  const dfi = f.get("dfi");
+  const color = dfi === "Yes" ? 0xED4245 : dfi === "Unknown" ? 0xFAA61A : 0x57F287;
+  const ref = "UKCR-" + Date.now().toString().slice(-6);
 
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-
-      const f = new FormData(form);
-
-      const date = esc(f.get("date"));
-      const dfi = esc(f.get("dfi"));
-      const rgrade = esc(f.get("rgrade") || "—");
-      const officers = esc(f.get("officers") || "—");
-      const tactics = esc(f.get("tactics") || "—");
-      const ofc = esc(f.get("ofc") || "—");
-      const tfc = esc(f.get("tfc") || "—");
-      const sfc = esc(f.get("sfc") || "—");
-      const whenwhy = esc(f.get("whenwhy") || "—");
-      const firearm = esc(f.get("firearm") || "—");
-
-      // Colour changes based on DFI for quick visual severity
-      const color =
-        dfi === "Yes" ? 0xED4245 :     // Red
-        dfi === "Unknown" ? 0xFAA61A : // Amber
-        0x57F287;                      // Green
-
-      // "HTML-style" layout using Discord markdown + dividers
-      const reportBlock =
-`**UKCR DISCHARGE REPORT**
-━━━━━━━━━━━━━━━━━━
-**📅 Date:** ${date}
-**🚨 DFI Declared:** **${dfi}**
-**📊 R Grade:** ${rgrade}
-
-**👮 Officers on Scene**
-${officers}
-
-**🎯 Tactics Used**
-${tactics}
-
-**🧭 Command Structure**
-• **OFC:** ${ofc}
-• **TFC:** ${tfc}
-• **SFC:** ${sfc}
-
-**⏱️ When & Why**
-${whenwhy}
-
-**🔧 Firearm Discharged**
-**${firearm}**
-━━━━━━━━━━━━━━━━━━`;
-
-      const embed = {
-        author: {
-          name: "UKCR Incident Reporting",
-          icon_url: "https://cdn.discordapp.com/emojis/1098212251536922624.png"
+  const embeds = [
+    {
+      title: "🔫 Firearm Discharge Logged",
+      color,
+      fields: [
+        { name: "📅 Date", value: f.get("date"), inline: true },
+        { name: "🚨 DFI", value: `**${dfi}**`, inline: true },
+        { name: "🧾 Ref", value: ref, inline: true }
+      ],
+      footer: { text: "UKCR Discharge System" },
+      timestamp: new Date().toISOString()
+    },
+    {
+      color,
+      fields: [
+        { name: "👮 Officers", value: f.get("officers") },
+        { name: "🎯 Tactics", value: f.get("tactics") || "—" },
+        {
+          name: "🧭 Command",
+          value:
+            `**OFC:** ${f.get("ofc") || "—"}\n` +
+            `**TFC:** ${f.get("tfc") || "—"}\n` +
+            `**SFC:** ${f.get("sfc") || "—"}`
         },
-        title: "🔫 Firearm Discharge Report",
-        description: reportBlock,
-        color,
-        timestamp: new Date().toISOString(),
-        footer: {
-          text: "Submitted via UKCR Discharge Logging System"
-        }
-      };
+        { name: "⏱️ When & Why", value: f.get("whenwhy") },
+        { name: "🔧 Firearm", value: `**${f.get("firearm")}**` }
+      ]
+    }
+  ];
 
-      statusBox.textContent = "Sending formatted report to Discord…";
+  statusBox.textContent = "Sending to Discord…";
 
-      try {
-        const res = await fetch(DISCORD_WEBHOOK_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ embeds: [embed] })
-        });
-
-        if (!res.ok) throw new Error();
-
-        statusBox.textContent = "✅ Report submitted successfully";
-        form.reset();
-      } catch (err) {
-        statusBox.textContent = "❌ Failed to submit report";
-      }
-    };
-  </script>
+  try {
+    await fetch(WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embeds })
+    });
+    statusBox.textContent = "✅ Sent successfully";
+    form.reset();
+  } catch {
+    statusBox.textContent = "❌ Failed to send";
+  }
+};
+</script>
 </body>
 </html>
